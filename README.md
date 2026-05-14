@@ -105,15 +105,29 @@ The drop is **consistent with structural ETF impact**: spot ETF launch in Januar
 
 ---
 
-## How to use
+## How to install
 
-1. Open TradingView and load any BTC chart (e.g., `BINANCE:BTCUSDT`)
-2. Open the Pine Editor → paste contents of [`mvrv_regime_monitor.pine`](./mvrv_regime_monitor.pine)
-3. Save → Add to chart
-4. The indicator appears in a separate pane below price
-5. (Optional) Right-click the indicator → Add Alert → pick one of the three threshold alerts
+This indicator is distributed as a Pine Script source file, not as a TradingView "Invite-Only" or "Public" library. A free TradingView account is enough to use it — you just paste the code into the Pine Editor yourself.
 
-The indicator pulls MVRV automatically from INTOTHEBLOCK regardless of which BTC ticker your main chart uses. Daily granularity.
+**Setup (~30 seconds, one time):**
+
+1. Open [`mvrv_regime_monitor.pine`](./mvrv_regime_monitor.pine) in this repo. Click "Raw" to view the plain source, then copy everything.
+2. On TradingView, open any BTC chart (e.g., `BINANCE:BTCUSDT`).
+3. Bottom of the chart → open the **Pine Editor**.
+4. **Delete the default content** and paste the copied source.
+5. Click **Save** (top right), give it any name, then **Add to chart**.
+
+The indicator appears in a separate pane below price.
+
+**Setting up alerts (optional):**
+
+Right-click the indicator pane → "Add Alert..." → in the dialog, the "Condition" dropdown shows three pre-defined alerts:
+
+- `MVRV → Entry zone` — fires when MVRV crosses below 1.0
+- `MVRV → Exit zone` — fires when MVRV crosses above 2.5
+- `MVRV → Euphoria zone` — fires when MVRV crosses above 3.5
+
+The indicator pulls daily MVRV from `INTOTHEBLOCK:BTC_MVRV` automatically, regardless of which BTC ticker your main chart uses.
 
 ---
 
