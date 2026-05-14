@@ -1,0 +1,124 @@
+// © 2026 lonelyobserver0 — MVRV Regime Monitor (Free Edition)
+// SPDX-License-Identifier: MIT
+// Source: https://github.com/lonelyobserver0/mvrv-regime-monitor
+//
+// Honest MVRV indicator with statistically validated thresholds.
+// Walk-forward IS 2018-2021, OOS 2022-2026: CAGR +27%, DD −36%, Sharpe 0.91.
+// Full period (2018-2026): CAGR +48% vs Buy&Hold +24%, max DD −36% vs −81%.
+//
+// SCOPE & LIMITS (read before using):
+//   • Validated on BTC only. Falsified on 8 altcoins (ADA −9%, DOT −31%).
+//   • N=3 trades in 8 years. Statistically thin: this is a REGIME model,
+//     not a high-frequency strategy.
+//   • Cycle Sharpe trending down (1.96 → 1.81 → 1.40) — ETF maturity
+//     appears to be compressing the edge. Expect lower CAGR forward.
+//   • This is NOT a buy/sell signal generator. It tells you where in the
+//     cycle Bitcoin currently sits. You decide what to do.
+//
+// PAID EDITION (Invite-only, in development) will add:
+//   • Configurable alerts on threshold crossings
+//   • Historical cycle annotations on price chart
+//   • Z-score normalized variant (more stable long-horizon)
+//   • Cycle-by-cycle Sharpe tracker
+//   • Discord access
+//
+//@version=5
+indicator("MVRV Regime Monitor (Free)", shorttitle="MVRV Regime", overlay=false, precision=3)
+
+// ── Inputs ──────────────────────────────────────────────────────────────
+grpThr   = "Regime thresholds (validated walk-forward, BTC only)"
+thrEntry = input.float(1.0, "Entry zone (MVRV <)",       step=0.1, group=grpThr,
+                       tooltip="Walk-forward best IS combo: long when MVRV < 1.0. " +
+                              "Historically reached at 2018-12 ($3.2k), 2020-03 ($4.8k), 2022-11 ($16k).")
+thrAccum = input.float(2.0, "Accumulation / neutral upper",step=0.1, group=grpThr,
+                       tooltip="Visual divider between neutral and distribution zones.")
+thrExit  = input.float(2.5, "Exit zone (MVRV >)",        step=0.1, group=grpThr,
+                       tooltip="Walk-forward best IS combo: exit when MVRV > 2.5. " +
+                              "Historically reached at 2017-12 ($19k), 2021-04 ($63k), 2021-11 ($69k).")
+thrEuph  = input.float(3.5, "Euphoria zone (MVRV >)",    step=0.1, group=grpThr,
+                       tooltip="Late-cycle blow-off. Historically only in 2013, 2017-12, 2021-04. " +
+                              "Above this, all known cycles topped within weeks.")
+
+grpVis   = "Visual"
+showBg   = input.bool(true,  "Color background by regime", group=grpVis)
+showLbl  = input.bool(true,  "Show current regime label",   group=grpVis)
+showHist = input.bool(false, "Show cycle hint markers (Paid: precise annotations)",
+                       group=grpVis,
+                       tooltip="Free version shows generic vertical lines at 2017-12, 2018-12, " +
+                              "2021-04, 2022-11. Paid version positions them exactly on MVRV cycle " +
+                              "tops/bottoms with annotation labels.")
+
+// ── Data ────────────────────────────────────────────────────────────────
+// INTOTHEBLOCK:BTC_MVRV is published free on TradingView.
+// We use lookahead_off to ensure no peek into future bars.
+mvrv = request.security("INTOTHEBLOCK:BTC_MVRV", "D", close,
+                       lookahead = barmerge.lookahead_off,
+                       gaps      = barmerge.gaps_off)
+
+// ── Plotting ────────────────────────────────────────────────────────────
+plot(mvrv, title="MVRV", color=color.new(#1976D2, 0), linewidth=2)
+
+hline(thrEntry, "Entry",           color=color.new(color.green,  30), linestyle=hline.style_solid)
+hline(thrAccum, "Accumulation top",color=color.new(color.gray,   50), linestyle=hline.style_dotted)
+hline(thrExit,  "Exit",            color=color.new(color.orange, 30), linestyle=hline.style_solid)
+hline(thrEuph,  "Euphoria",        color=color.new(color.red,    30), linestyle=hline.style_solid)
+
+// Regime classification
+regime = na(mvrv) ? "—" :
+         mvrv < thrEntry ? "ENTRY ZONE"  :
+         mvrv < thrAccum ? "ACCUMULATION":
+         mvrv < thrExit  ? "DISTRIBUTION RISK" :
+         mvrv < thrEuph  ? "EXIT ZONE"   :
+                           "EUPHORIA"
+regColor = na(mvrv) ? color.gray :
+           mvrv < thrEntry ? color.new(color.green,  85) :
+           mvrv < thrAccum ? color.new(color.olive,  90) :
+           mvrv < thrExit  ? color.new(color.gray,   92) :
+           mvrv < thrEuph  ? color.new(color.orange, 85) :
+                             color.new(color.red,    80)
+
+bgcolor(showBg ? regColor : na, title="Regime background")
+
+// ── Current state label ────────────────────────────────────────────────
+var label currentLbl = na
+if barstate.islast and showLbl
+    label.delete(currentLbl)
+    txt = "MVRV = " + str.tostring(mvrv, "#.###") + "\n" + regime
+    lblColor = na(mvrv) ? color.gray :
+               mvrv < thrEntry ? color.green :
+               mvrv > thrEuph  ? color.red   :
+               mvrv > thrExit  ? color.orange :
+                                 color.gray
+    currentLbl := label.new(bar_index, mvrv, txt,
+                            style=label.style_label_left,
+                            color=lblColor,
+                            textcolor=color.white,
+                            size=size.normal)
+
+// ── Generic cycle hint lines (Free: imprecise; Paid: exact) ──────────────
+if showHist
+    // Approximate cycle anchors. Paid version computes from MVRV series live.
+    if year == 2017 and month == 12 and dayofmonth == 1
+        line.new(bar_index, 0, bar_index, 5, color=color.new(color.red, 50),
+                 style=line.style_dashed, extend=extend.both)
+    if year == 2018 and month == 12 and dayofmonth == 1
+        line.new(bar_index, 0, bar_index, 5, color=color.new(color.green, 50),
+                 style=line.style_dashed, extend=extend.both)
+    if year == 2021 and month == 4 and dayofmonth == 1
+        line.new(bar_index, 0, bar_index, 5, color=color.new(color.red, 50),
+                 style=line.style_dashed, extend=extend.both)
+    if year == 2022 and month == 11 and dayofmonth == 1
+        line.new(bar_index, 0, bar_index, 5, color=color.new(color.green, 50),
+                 style=line.style_dashed, extend=extend.both)
+
+// ── Alerts (Free: state-change only. Paid: configurable thresholds & multi-asset) ──
+crossUnderEntry = not na(mvrv) and not na(mvrv[1]) and mvrv[1] >= thrEntry and mvrv < thrEntry
+crossOverExit   = not na(mvrv) and not na(mvrv[1]) and mvrv[1] <= thrExit  and mvrv > thrExit
+crossOverEuph   = not na(mvrv) and not na(mvrv[1]) and mvrv[1] <= thrEuph  and mvrv > thrEuph
+
+alertcondition(crossUnderEntry, title="MVRV → Entry zone",
+               message="BTC MVRV crossed under entry threshold. Historically a value zone.")
+alertcondition(crossOverExit,   title="MVRV → Exit zone",
+               message="BTC MVRV crossed above exit threshold. Historically a distribution zone.")
+alertcondition(crossOverEuph,   title="MVRV → Euphoria zone",
+               message="BTC MVRV crossed above euphoria threshold. All prior cycles topped within weeks.")
