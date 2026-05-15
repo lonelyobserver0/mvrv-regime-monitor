@@ -6,7 +6,7 @@ An honest Bitcoin MVRV indicator for TradingView. **Validated thresholds, falsif
 
 ## What this is
 
-A Pine Script v5 indicator that:
+A Pine Script v6 indicator that:
 
 - Pulls `INTOTHEBLOCK:BTC_MVRV` (free TradingView feed) on the daily timeframe
 - Shows the current MVRV value with four regime thresholds (entry, accumulation, exit, euphoria)
