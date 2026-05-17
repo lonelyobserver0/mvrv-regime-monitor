@@ -141,7 +141,7 @@ A separate Invite-Only version is in development with:
 - **Cycle-by-cycle Sharpe tracker** showing whether the edge is decaying further
 - **Discord access** for Q&A on the methodology
 
-Expected price: $10/month or $50 one-time. If you're interested, open an issue on this repo and I'll DM you when it ships.
+Expected price: $5/month or $100 one-time. If you're interested, open an issue on this repo and I'll DM you when it ships.
 
 ---
 
